@@ -434,3 +434,38 @@ LEFT JOIN payments p ON b.id = p.billing_id
 GROUP BY cl.id, cl.full_name, cl.email
 HAVING COUNT(b.id) > 0
 ORDER BY outstanding_balance DESC;
+
+-- =============================================
+-- SECURITY POLICIES
+-- =============================================
+
+-- Policies for "clients" table
+CREATE POLICY "Clients can view own data"
+  ON clients FOR SELECT
+  USING (id = auth.uid());
+
+CREATE POLICY "Clients can insert own data"
+  ON clients FOR INSERT
+  WITH CHECK (id = auth.uid());
+
+CREATE POLICY "Clients can update own data"
+  ON clients FOR UPDATE
+  USING (id = auth.uid());
+
+CREATE POLICY "Clients can delete own data"
+  ON clients FOR DELETE
+  USING (id = auth.uid());
+
+-- Policies for "profiles" table
+CREATE POLICY "Profiles can view own data"
+  ON profiles FOR SELECT
+  USING (id = auth.uid());
+
+CREATE POLICY "Profiles can update own data"
+  ON profiles FOR UPDATE
+  USING (id = auth.uid());
+
+-- Add after the existing policies for profiles
+CREATE POLICY "Users can insert own profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);

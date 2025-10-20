@@ -1,16 +1,50 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Plus, Calendar as CalendarIcon, Clock, MapPin, Video, Phone } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, MapPin, Video, Phone, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function AppointmentsModule() {
   const { profile } = useAuth();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
+  const [lawyers, setLawyers] = useState<any[]>([]);
+  const [formData, setFormData] = useState({
+    client_id: '',
+    lawyer_id: '',
+    appointment_date: '',
+    duration_minutes: 30,
+    meeting_type: 'in_person',
+    location: '',
+    notes: ''
+  });
 
   useEffect(() => {
     loadAppointments();
+    loadClientsAndLawyers();
   }, []);
+
+  async function loadClientsAndLawyers() {
+    try {
+      // Fetch clients
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, full_name');
+      if (clientsError) throw clientsError;
+      setClients(clientsData || []);
+
+      // Fetch lawyers and assistants
+      const { data: lawyersData, error: lawyersError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('role', ['lawyer', 'assistant']);
+      if (lawyersError) throw lawyersError;
+      setLawyers(lawyersData || []);
+    } catch (error) {
+      console.error('Error loading clients and lawyers:', error);
+    }
+  }
 
   async function loadAppointments() {
     try {
@@ -42,6 +76,29 @@ export default function AppointmentsModule() {
       console.error('Error loading appointments:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleCreateAppointment(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .insert([formData]);
+      if (error) throw error;
+      setShowModal(false);
+      setFormData({
+        client_id: '',
+        lawyer_id: '',
+        appointment_date: '',
+        duration_minutes: 30,
+        meeting_type: 'in_person',
+        location: '',
+        notes: ''
+      });
+      loadAppointments();
+    } catch (error) {
+      console.error('Error creating appointment:', error);
     }
   }
 
@@ -86,11 +143,85 @@ export default function AppointmentsModule() {
           <h1 className="text-3xl font-bold text-slate-900">Appointments</h1>
           <p className="text-slate-600 mt-2">Schedule and manage your meetings</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm">
-          <Plus className="w-5 h-5" />
-          New Appointment
-        </button>
+        {profile?.role !== 'client' && (
+          <button 
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            New Appointment
+          </button>
+        )}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">New Appointment</h2>
+              <button onClick={() => setShowModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateAppointment} className="space-y-4">
+              <select
+                value={formData.client_id}
+                onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
+                required
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Select Client</option>
+                {clients.map(client => (
+                  <option key={client.id} value={client.id}>{client.full_name}</option>
+                ))}
+              </select>
+              <select
+                value={formData.lawyer_id}
+                onChange={(e) => setFormData({ ...formData, lawyer_id: e.target.value })}
+                required
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Select Lawyer</option>
+                {lawyers.map(lawyer => (
+                  <option key={lawyer.id} value={lawyer.id}>{lawyer.full_name}</option>
+                ))}
+              </select>
+              <input
+                type="datetime-local"
+                value={formData.appointment_date}
+                onChange={(e) => setFormData({ ...formData, appointment_date: e.target.value })}
+                required
+                className="w-full p-2 border rounded"
+              />
+              <select
+                value={formData.meeting_type}
+                onChange={(e) => setFormData({ ...formData, meeting_type: e.target.value })}
+                className="w-full p-2 border rounded"
+              >
+                <option value="in_person">In Person</option>
+                <option value="video_call">Video Call</option>
+                <option value="phone_call">Phone Call</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Location (if applicable)"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full p-2 border rounded"
+              />
+              <textarea
+                placeholder="Notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                className="w-full p-2 border rounded"
+              />
+              <button type="submit" className="w-full bg-slate-900 text-white p-2 rounded hover:bg-slate-800">
+                Create Appointment
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">

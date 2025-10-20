@@ -966,3 +966,12 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER auto_generate_invoice_number BEFORE INSERT ON billing
   FOR EACH ROW EXECUTE FUNCTION generate_invoice_number();
+
+  -- Enable RLS and add policies (as per previous advice)
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "profiles_select_own" ON profiles FOR SELECT USING (auth.uid() = id);
+-- Add more policies as needed...
+
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "clients_insert_authenticated" ON clients FOR INSERT WITH CHECK (user_id = auth.uid());
+-- Add more policies...

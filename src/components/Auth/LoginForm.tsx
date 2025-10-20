@@ -86,11 +86,6 @@ export default function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () 
           </form>
 
           <div className="mt-6 text-center text-sm text-slate-600">
-            <p>Demo Credentials:</p>
-            <p className="text-xs mt-2">
-              Create an account or contact your administrator
-            </p>
-
             <div className="mt-4">
               <button
                 type="button"

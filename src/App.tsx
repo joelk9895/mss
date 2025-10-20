@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginForm from './components/Auth/LoginForm';
+import SignupForm from './components/Auth/SignupForm';
 import Sidebar from './components/Layout/Sidebar';
 import LawyerDashboard from './components/Dashboard/LawyerDashboard';
 import ClientsModule from './components/Clients/ClientsModule';
@@ -12,6 +13,7 @@ import BillingModule from './components/Billing/BillingModule';
 function AppContent() {
   const { user, profile, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [authView, setAuthView] = useState<'login' | 'signup'>('login');
 
   if (loading) {
     return (
@@ -24,8 +26,12 @@ function AppContent() {
     );
   }
 
-  if (!user || !profile) {
-    return <LoginForm />;
+  if (!user) {
+    return authView === 'login' ? (
+      <LoginForm onSwitchToSignup={() => setAuthView('signup')} />
+    ) : (
+      <SignupForm onSwitchToLogin={() => setAuthView('login')} />
+    );
   }
 
   const renderContent = () => {
