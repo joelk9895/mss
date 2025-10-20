@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, AlertCircle } from 'lucide-react';
 
-export default function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () => void }) {
+export default function SignupForm({ onSwitchToLogin }: { onSwitchToLogin?: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [role, setRole] = useState<'client' | 'lawyer' | 'assistant'>('client');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -15,7 +17,7 @@ export default function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () 
     setLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signUp(email, password, name, role);
       if (error) {
         setError(error.message);
       }
@@ -34,8 +36,8 @@ export default function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () 
             <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-900 rounded-full mb-4">
               <LogIn className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold text-slate-900">Legal Manager</h2>
-            <p className="text-slate-600 mt-2">Sign in to your account</p>
+            <h2 className="text-3xl font-bold text-slate-900">Create Account</h2>
+            <p className="text-slate-600 mt-2">Sign up to access Legal Manager</p>
           </div>
 
           {error && (
@@ -46,6 +48,21 @@ export default function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () 
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
+                Full Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-shadow"
+                placeholder="Jane Doe"
+              />
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">
                 Email Address
@@ -76,12 +93,28 @@ export default function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () 
               />
             </div>
 
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-slate-700 mb-2">
+                Role
+              </label>
+              <select
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as 'client' | 'lawyer' | 'assistant')}
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-shadow bg-white"
+              >
+                <option value="client">Client</option>
+                <option value="lawyer">Lawyer</option>
+                <option value="assistant">Assistant</option>
+              </select>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 focus:ring-4 focus:ring-slate-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Creating account...' : 'Sign Up'}
             </button>
           </form>
 
@@ -94,10 +127,10 @@ export default function LoginForm({ onSwitchToSignup }: { onSwitchToSignup?: () 
             <div className="mt-4">
               <button
                 type="button"
-                onClick={() => onSwitchToSignup && onSwitchToSignup()}
+                onClick={() => onSwitchToLogin && onSwitchToLogin()}
                 className="text-slate-900 underline text-sm hover:text-slate-700"
               >
-                Don't have an account? Sign up
+                Already have an account? Sign in
               </button>
             </div>
           </div>
