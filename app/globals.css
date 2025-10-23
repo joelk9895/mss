@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-primary: oklch(0.63 0.21 250);
+  --color-primary-dark: oklch(0.55 0.21 250);
+  --color-success: oklch(0.65 0.23 140);
+  --color-warning: oklch(0.83 0.19 100);
+  --color-error: oklch(0.62 0.25 25);
+
+  /* Neutral palette (zinc scale) */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+
+  /* Spacing */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+/* Dark theme override */
+[data-theme="dark"] {
+  --background: var(--color-zinc-950);
+  --foreground: var(--color-zinc-50);
+}
+
+/* Base styles */
+body {
+  @apply text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-black antialiased;
+  font-family: var(--font-instrument);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-medium tracking-tight text-zinc-900 dark:text-zinc-50;
+}
+
+/* Components */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200 
+  disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-50 
+  dark:focus:ring-offset-black;
+}
+
+.btn-primary {
+  @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500/50;
+}
+
+.btn-secondary {
+  @apply bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 
+  hover:bg-zinc-300 dark:hover:bg-zinc-700 focus:ring-zinc-500/50;
+}
+
+.btn-outline {
+  @apply border-2 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100
+  hover:bg-zinc-100 dark:hover:bg-zinc-800/50 focus:ring-zinc-500/50;
+}
+
+.card {
+  @apply bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 
+  rounded-xl shadow-sm transition-shadow hover:shadow-md;
+}
+
+.input {
+  @apply w-full px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 
+  bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100
+  placeholder:text-zinc-400 dark:placeholder:text-zinc-600
+  focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 
+  focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed
+  transition-colors duration-200;
+}
+
+.label {
+  @apply block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5;
+}
+
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-success {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+}
+
+.badge-warning {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+}
+
+.badge-error {
+  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+}

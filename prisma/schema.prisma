@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // hashed
+  firstName String
+  lastName  String
+  role      String   @default("lawyer") // lawyer, assistant
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String?  // hashed password for client login
+  phone     String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  cases        Case[]
+  appointments Appointment[]
+}
+
+model Case {
+  id        String   @id @default(cuid())
+  clientId  String
+  title     String
+  description String?
+  status    String   @default("pending") // active, pending, closed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  documents   Document[]
+  billings    Billing[]
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  caseId    String?
+  userId    String?
+  clientId  String?
+  datetime  DateTime
+  location  String?
+  notes     String?
+  type      String   @default("client") // client, lawyer
+
+  case   Case?   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  caseId    String
+  filename  String
+  mimeType  String
+  uploadedAt DateTime @default(now())
+  url       String?
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+}
+
+model Billing {
+  id         String  @id @default(cuid())
+  caseId     String
+  amountCents Int
+  description String?
+  issuedAt   DateTime @default(now())
+  paid       Boolean @default(false)
+
+  case    Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  payments Payment[]
+}
+
+model Payment {
+  id        String @id @default(cuid())
+  billingId String
+  amountCents Int
+  method    String // card, bank, cash, other
+  paidAt    DateTime @default(now())
+
+  billing Billing @relation(fields: [billingId], references: [id], onDelete: Cascade)
+}
