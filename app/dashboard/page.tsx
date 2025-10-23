@@ -10,17 +10,21 @@ type Client = {
   email: string;
 };
 
-type Case = {
-  id: string;
-  title: string;
-  status: string;
-  client: Client;
-};
-
-export default function Dashboard() {
+  type Case = {
+    id: string;
+    title: string;
+    status: "active" | "pending" | "closed";
+    client: Client;
+    appointments?: Array<{
+      id: string;
+      datetime: string;
+      location: string | null;
+    }>;
+  };export default function Dashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusLoading, setStatusLoading] = useState<string | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [clientForm, setClientForm] = useState({
     firstName: "",
@@ -33,12 +37,21 @@ export default function Dashboard() {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
 
+  const isValidUrl = (string: string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [clientsRes, casesRes] = await Promise.all([
           fetch("/api/clients"),
-          fetch("/api/cases"),
+          fetch("/api/cases?include=appointments"),
         ]);
 
         if (clientsRes.ok) {
@@ -59,6 +72,53 @@ export default function Dashboard() {
 
     fetchData();
   }, []);
+
+  const handleStatusChange = async (caseId: string, newStatus: Case['status']) => {
+    if (!caseId || typeof caseId !== 'string') {
+      console.error('Invalid case ID:', caseId);
+      alert('Error: Invalid case ID');
+      return;
+    }
+    
+    setStatusLoading(caseId);
+    
+    try {
+      const res = await fetch(`/api/cases/${encodeURIComponent(caseId)}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setCases(prevCases => 
+          prevCases.map(c => 
+            c.id === caseId ? { ...c, status: newStatus } : c
+          )
+        );
+      } else {
+        console.error('Error updating case status:', data.error);
+        alert(data.error || 'Failed to update case status');
+        // Revert the select to the previous value
+        const currentCase = cases.find(c => c.id === caseId);
+        if (currentCase) {
+          const selectElement = document.querySelector(`select[data-case-id="${caseId}"]`) as HTMLSelectElement;
+          if (selectElement) {
+            selectElement.value = currentCase.status;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating case status:', error);
+      alert('Failed to update case status. Please try again.');
+    } finally {
+      setStatusLoading(null);
+    }
+  };
 
   const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,31 +218,35 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              <div>
+              <div className="relative">
                 {clients.length === 0 ? (
                   <p className="text-zinc-400 text-sm">No clients yet.</p>
                 ) : (
-                  <ul className="divide-y divide-zinc-100">
-                    {clients.slice(0, 5).map((client) => (
-                      <li key={client.id} className="py-4 first:pt-0">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-zinc-600">
-                              {client.firstName[0]}{client.lastName[0]}
-                            </span>
+                  <div className="relative overflow-hidden">
+                    <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
+                    <ul className="divide-y divide-zinc-100 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200 scrollbar-track-transparent hover:scrollbar-thumb-zinc-300 pr-2">
+                      {clients.map((client) => (
+                        <li key={client.id} className="py-4 first:pt-0">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-zinc-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-zinc-600">
+                                {client.firstName[0]}{client.lastName[0]}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-black truncate">
+                                {client.firstName} {client.lastName}
+                              </p>
+                              <p className="text-sm text-zinc-400 truncate">
+                                {client.email}
+                              </p>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-black truncate">
-                              {client.firstName} {client.lastName}
-                            </p>
-                            <p className="text-sm text-zinc-400 truncate">
-                              {client.email}
-                            </p>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </div>
@@ -196,37 +260,61 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div>
+              <div className="relative">
                 {cases.length === 0 ? (
                   <p className="text-zinc-400 text-sm">No cases yet.</p>
                 ) : (
-                  <ul className="divide-y divide-zinc-100">
-                    {cases.slice(0, 5).map((caseItem) => (
-                      <li key={caseItem.id} className="py-4 first:pt-0">
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-black truncate">
-                              {caseItem.title}
-                            </p>
-                            <p className="text-sm text-zinc-400 truncate mt-0.5">
-                              {caseItem.client.firstName} {caseItem.client.lastName}
-                            </p>
+                  <div className="relative overflow-hidden">
+                    <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-white to-transparent z-10 pointer-events-none"></div>
+                    <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-white to-transparent z-10 pointer-events-none"></div>
+                    <ul className="divide-y divide-zinc-100 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-200 scrollbar-track-transparent hover:scrollbar-thumb-zinc-300 pr-2">
+                      {cases.map((caseItem) => (
+                        <li key={caseItem.id} className="py-4 first:pt-0">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-black truncate">
+                                {caseItem.title}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-sm text-zinc-400 truncate">
+                                  {caseItem.client.firstName} {caseItem.client.lastName}
+                                </p>
+                                {caseItem.appointments?.some(apt => isValidUrl(apt.location || '')) && (
+                                  <button
+                                    onClick={() => {
+                                      const apt = caseItem.appointments?.find(a => isValidUrl(a.location || ''));
+                                      if (apt?.location) window.open(apt.location, '_blank');
+                                    }}
+                                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                                  >
+                                    Join Meeting
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <select
+                              value={caseItem.status}
+                              onChange={(e) => handleStatusChange(caseItem.id, e.target.value as Case['status'])}
+                              disabled={statusLoading === caseItem.id}
+                              data-case-id={caseItem.id}
+                              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap appearance-none cursor-pointer
+                                ${statusLoading === caseItem.id ? 'opacity-50' : ''}
+                                ${caseItem.status === "active"
+                                  ? "bg-blue-50 text-blue-600"
+                                  : caseItem.status === "pending"
+                                  ? "bg-zinc-100 text-zinc-600"
+                                  : "bg-zinc-50 text-zinc-500"
+                                }`}
+                            >
+                              <option value="active">Active</option>
+                              <option value="pending">Pending</option>
+                              <option value="closed">Closed</option>
+                            </select>
                           </div>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                              caseItem.status === "active"
-                                ? "bg-blue-50 text-blue-600"
-                                : caseItem.status === "pending"
-                                ? "bg-zinc-100 text-zinc-600"
-                                : "bg-zinc-50 text-zinc-500"
-                            }`}
-                          >
-                            {caseItem.status}
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
             </div>

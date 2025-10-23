@@ -11,7 +11,20 @@ export async function GET(request: Request) {
 
     const cases = await prisma.case.findMany({
       where,
-      include: { client: true },
+      include: {
+        client: true,
+        appointments: {
+          where: {
+            datetime: {
+              gte: new Date()
+            }
+          },
+          orderBy: {
+            datetime: 'asc'
+          },
+          take: 1
+        }
+      },
     });
     return NextResponse.json(cases);
   } catch (error) {
